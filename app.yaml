@@ -7,5 +7,7 @@ threadsafe: true
 handlers:
 - url: /unit2/rot13
   script: rot13.app
+- url: /unit2/(signup|welcome)
+  script: signup.app
 - url: /.*
   script: main.app
