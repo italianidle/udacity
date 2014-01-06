@@ -4,7 +4,15 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
+libraries:
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest
+
 handlers:
+- url: /asciichan
+  script: asciichan.app
 - url: /unit2/rot13
   script: rot13.app
 - url: /unit2/(signup|welcome)
