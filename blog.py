@@ -168,11 +168,16 @@ class Login(BaseHandler):
                 error = "Login credentials are not valid!"
                 self.render_page(username, error)
             
+class Logout(BaseHandler):
+    def get(self):
+        self.set_secure_cookie('user_id', '')
+        self.redirect("/blog/signup")
 
 app = webapp2.WSGIApplication([(r'/blog/?', MainPage),
                                (r'/blog/newpost', NewPost),
                                (r'/blog/(\d+)', Permalink),
                                (r'/blog/signup', Signup),
                                (r'/blog/welcome', WelcomePage),
-                               (r'/blog/login', Login)
+                               (r'/blog/login', Login),
+                               (r'/blog/logout', Logout)
                                ], debug = True)
