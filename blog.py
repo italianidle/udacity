@@ -4,6 +4,22 @@ from google.appengine.ext import db
 from common import BaseHandler
 
 import re
+import random
+import string
+import hashlib
+
+def make_salt():
+    return ''.join(random.choice(string.letters) for x in xrange(5))
+
+def make_pw_hash(name, pw, salt = None):
+    if not salt:
+        salt = make_salt()
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s|%s' % (h, salt)
+
+def valid_pw(name, pw, h):
+    salt = h.split('|')[1]
+    return h == make_pw_hash(name, pw, salt)
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
@@ -25,7 +41,7 @@ class Post(db.Model):
 
 class User(db.Model):
     username = db.StringProperty(required = True)
-    password = db.StringProperty(required = True)
+    password_hash = db.StringProperty(required = True)
     email = db.StringProperty()
 
 class MainPage(BaseHandler):
@@ -100,7 +116,8 @@ class Signup(BaseHandler):
         if username_error or password_error or verify_error or email_error:
             self.render_page(username, email, username_error, password_error, verify_error, email_error)
         else:
-            user = User(username=username, password=password, email=email)
+            password_hash = make_pw_hash(username, password)
+            user = User(username=username, password_hash=password_hash, email=email)
             user.put()
 
             self.set_secure_cookie('user_id', str(user.key().id()))
@@ -123,9 +140,39 @@ class WelcomePage(BaseHandler):
             self.redirect("/blog/signup")
 
 
+class Login(BaseHandler):
+    def render_page(self, username="", error=""):
+        self.render("blog/login.html", username=username, error=error)
+
+    def get(self):
+        self.render_page()
+
+    def post(self):
+        username = self.request.get("username")
+        password = self.request.get("password")
+
+        error = ""
+
+        if not valid_username(username) or not valid_password(password):
+            error = "Username or password aren't valid!"
+
+        if error:
+            self.render_page(username=username, error=error)
+        else:
+            user = User.gql("WHERE username = :1", username).get()
+
+            if user and valid_pw(username, password, user.password_hash):
+                self.set_secure_cookie('user_id', str(user.key().id()))
+                self.redirect("/blog/welcome")
+            else:
+                error = "Login credentials are not valid!"
+                self.render_page(username, error)
+            
+
 app = webapp2.WSGIApplication([(r'/blog/?', MainPage),
                                (r'/blog/newpost', NewPost),
                                (r'/blog/(\d+)', Permalink),
                                (r'/blog/signup', Signup),
-                               (r'/blog/welcome', WelcomePage)
+                               (r'/blog/welcome', WelcomePage),
+                               (r'/blog/login', Login)
                                ], debug = True)
