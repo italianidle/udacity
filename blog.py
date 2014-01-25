@@ -7,6 +7,7 @@ import re
 import random
 import string
 import hashlib
+import json
 
 def make_salt():
     return ''.join(random.choice(string.letters) for x in xrange(5))
@@ -39,6 +40,16 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
 
+class PostEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Post):
+            d = {}
+            d['subject'] = obj.subject
+            d['content'] = obj.content
+            d['created'] = obj.created.ctime()
+            return d
+        return json.JSONEncoder.default(self, obj)
+        
 class User(db.Model):
     username = db.StringProperty(required = True)
     password_hash = db.StringProperty(required = True)
@@ -173,11 +184,34 @@ class Logout(BaseHandler):
         self.set_secure_cookie('user_id', '')
         self.redirect("/blog/signup")
 
+class JsonHandler(BaseHandler):
+    def render_json(self, data):
+        self.response.headers['content-type'] = 'application/json; charset=utf-8'
+        if data:
+            s = json.dumps(data, cls=PostEncoder)
+            self.write(s)
+    
+class BlogJson(JsonHandler):
+    def get(self):
+        posts = Post.all().order('-created')
+        posts = list(posts)
+        self.render_json(posts)
+
+
+class PermalinkJson(JsonHandler):
+    def get(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        self.render_json(post)
+
+
+
 app = webapp2.WSGIApplication([(r'/blog/?', MainPage),
                                (r'/blog/newpost', NewPost),
                                (r'/blog/(\d+)', Permalink),
                                (r'/blog/signup', Signup),
                                (r'/blog/welcome', WelcomePage),
                                (r'/blog/login', Login),
-                               (r'/blog/logout', Logout)
+                               (r'/blog/logout', Logout),
+                               (r'/blog/.json', BlogJson),
+                               (r'/blog/(\d+).json', PermalinkJson)
                                ], debug = True)
