@@ -1,8 +1,11 @@
 import webapp2
 import urllib2
+import logging
 from xml.dom import minidom
 
+from google.appengine.api import memcache
 from google.appengine.ext import db
+
 from common import BaseHandler
 
 IP_URL = "http://api.hostip.info/?ip="
@@ -33,17 +36,30 @@ class Art(db.Model):
     created = db.DateTimeProperty(auto_now_add = True)
     coords = db.GeoPtProperty()
 
-class MainPage(BaseHandler):
-    def render_front(self, title="", art="", error=""):
-        arts = db.GqlQuery("SELECT * FROM Art "
-                           "ORDER BY created DESC ")
+
+
+def top_arts(update = False):
+    key = 'top'
+    arts = memcache.get(key)
+    if arts is None or update:
+        logging.error("DB QUERY")
+        arts = db.GqlQuery("SELECT * "
+                           "FROM Art "
+                           "ORDER BY created DESC "
+                           "LIMIT 10")
 
         #prevent the running of multiple queries
         arts = list(arts)
+        memcache.set(key, arts)
+    return arts    
+    
+class MainPage(BaseHandler):
+    def render_front(self, title="", art="", error=""):
+        arts = top_arts()
 
+        img_url = None
         #find which arts have coords
         points = filter(None, (a.coords for a in arts))
-        img_url = None
         if points:
             img_url = gmaps_img(points)
         
@@ -64,6 +80,8 @@ class MainPage(BaseHandler):
                 a.coords = coords
 
             a.put()
+            #rerun the query and update the cache
+            top_arts(True)
 
             self.redirect('/asciichan')
         else:
