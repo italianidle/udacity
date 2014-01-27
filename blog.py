@@ -1,6 +1,8 @@
 import webapp2
 
+from google.appengine.api import memcache
 from google.appengine.ext import db
+
 from common import BaseHandler
 
 import re
@@ -8,6 +10,7 @@ import random
 import string
 import hashlib
 import json
+from datetime import datetime, timedelta
 
 def make_salt():
     return ''.join(random.choice(string.letters) for x in xrange(5))
@@ -55,12 +58,33 @@ class User(db.Model):
     password_hash = db.StringProperty(required = True)
     email = db.StringProperty()
 
+def age_set(key, val):
+    save_time = datetime.utcnow()
+    memcache.set(key, (val, save_time))
+
+def age_get(key):
+    r = memcache.get(key)
+    if r:
+        val, save_time = r
+        age = (datetime.utcnow() - save_time).total_seconds()
+    else:
+        val, age = None, 0
+    return val, age
+
+def get_posts(update = False):
+    q = Post.all().order('-created').fetch(limit = 10)
+    key = 'all'
+    
+    posts, age = age_get(key)
+    if posts is None or update:
+        posts = list(q)
+        age_set(key, posts)
+    return posts, age
+    
 class MainPage(BaseHandler):
     def render_front(self):
-        posts = db.GqlQuery("SELECT * FROM Post "
-                            "ORDER BY created DESC ")
-
-        self.render("blog/front.html", posts=posts)
+        posts, age = get_posts()
+        self.render("blog/front.html", posts=posts, age=int(age))
 
     def get(self):
         self.render_front()
@@ -80,15 +104,25 @@ class NewPost(BaseHandler):
             post = Post(subject = subject, content = content)
             post.put()
 
+            get_posts(True)
+
             self.redirect("/blog/%d" % post.key().id())
         else:
             error = "Subject and content are required!"
             self.render_page(subject, content, error)
 
+def get_post(post_id):
+    key = post_id
+    post, age = age_get(key)
+    if post is None:
+        post = Post.get_by_id(int(post_id))
+        age_set(key, post)
+    return post, age
+        
 class Permalink(BaseHandler):
     def render_page(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        self.render("blog/front.html", posts=[post])
+        post, age = get_post(post_id)
+        self.render("blog/front.html", posts=[post], age=int(age))
 
     def get(self, post_id):
         self.render_page(post_id)
@@ -134,7 +168,6 @@ class Signup(BaseHandler):
             self.set_secure_cookie('user_id', str(user.key().id()))
             self.redirect("/blog/welcome")
 
-
 class WelcomePage(BaseHandler):
 
     def get(self):
@@ -149,7 +182,6 @@ class WelcomePage(BaseHandler):
         else:
             self.set_secure_cookie('user_id','')
             self.redirect("/blog/signup")
-
 
 class Login(BaseHandler):
     def render_page(self, username="", error=""):
@@ -197,13 +229,16 @@ class BlogJson(JsonHandler):
         posts = list(posts)
         self.render_json(posts)
 
-
 class PermalinkJson(JsonHandler):
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
         self.render_json(post)
 
 
+class FlushCache(BaseHandler):
+    def get(self):
+        memcache.flush_all()
+        self.redirect("/blog")
 
 app = webapp2.WSGIApplication([(r'/blog/?', MainPage),
                                (r'/blog/newpost', NewPost),
@@ -213,5 +248,6 @@ app = webapp2.WSGIApplication([(r'/blog/?', MainPage),
                                (r'/blog/login', Login),
                                (r'/blog/logout', Logout),
                                (r'/blog/.json', BlogJson),
-                               (r'/blog/(\d+).json', PermalinkJson)
+                               (r'/blog/(\d+).json', PermalinkJson),
+                               (r'/blog/flush', FlushCache)
                                ], debug = True)

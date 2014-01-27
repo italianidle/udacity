@@ -5,6 +5,23 @@ body {
     padding: 10px;
 }
 
+.login-area {
+    font-size: 13px;
+    color: gray;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.login-link {
+    color: gray;
+    text-decoration: none;
+}
+
+.login-link:visited {
+    color: gray;
+}
+
 label {
     display: block;
     font-size: 20px;
@@ -73,4 +90,12 @@ input[type=submit] {
 
 .post-content {
     margin-top: 5px;
+}
+
+.age {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    color: gray;
+    font-size: 12px;
 }
