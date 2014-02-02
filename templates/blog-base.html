@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/static/main.css" />
+
+  <title>Blog</title>
+</head>
+
+<body>
+  <a href="/blog" class="main-title">
+    Blog
+  </a>
+
+  <div class="login-area">
+    {% if user %}
+      {{user.name}} (<a class="login-link" href="/blog/logout">logout</a>)
+    {% else %}
+      <a class="login-link" href="/blog/login">login</a>
+      |
+      <a class="login-link" href="/blog/signup">signup</a>
+    {% endif %}
+  </div>
+
+  <div id="content">
+  {% block content %}
+  {% endblock %}
+  </div>
+
+  <br><br>
+
+  
+  <div class="age">
+    {%- if age == 1 %}
+    Queried {{age}} second ago
+    {% else %}
+    Queried {{age}} seconds ago
+    {% endif %}
+  </div>
+</body>
+
+</html>
+

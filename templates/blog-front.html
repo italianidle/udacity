@@ -1,0 +1,11 @@
+{% extends "blog-base.html" %}
+
+{% import 'post.html' as post %}
+{% block content %}
+
+  {% for p in posts %}
+    {{ post.render(p) }}
+    <br><br>
+  {% endfor %}
+
+{% endblock %}
