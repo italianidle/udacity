@@ -15,6 +15,7 @@ class BaseHandler(webapp2.RequestHandler):
         self.response.out.write(*a, **kw)
 
     def render_str(self, template, **params):
+        params['user'] = self.user
         t = jinja_env.get_template(template)
         return t.render(params)
 
@@ -94,3 +95,4 @@ class Signup(BaseHandler):
 
     def done(self):
         raise NotImplementedError
+

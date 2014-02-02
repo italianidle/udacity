@@ -76,3 +76,20 @@ class Art(db.Model):
     @classmethod
     def new(cls, title, art):
         return Art(parent=arts_key(), title = title, art = art)
+
+def page_key(path):
+    return db.Key.from_path('/root' + path, 'pages')
+
+class Page(db.Model):
+    content = db.TextProperty()
+    created = db.DateTimeProperty(auto_now_add = True)
+    last_modified = db.DateTimeProperty(auto_now = True)
+
+    @classmethod
+    def by_path(cls, path):
+        p = Page.all().ancestor(page_key(path)).get()
+        return p
+
+    @classmethod
+    def new(cls, path, content=''):
+        return Page(parent=page_key(path), content=content)
