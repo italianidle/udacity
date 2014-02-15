@@ -1,0 +1,25 @@
+{% extends "wiki-base.html" %}
+    
+{% block controls %}
+{% if user %}
+<a class="gray-link" href="/wiki/_edit{{path}}">edit</a>
+|
+{% endif %}
+<a class="gray-link" href="/wiki{{path}}">view</a>
+{% endblock %}
+
+{% block content %}
+<table>
+{% for p in pages%}
+<tr>
+  <td class="wiki-date">{{ p.created.ctime() }}</td>
+  <td class="wiki-content">{{ p.content[:100] }}</td>
+  <td><a class="gray-link" href="/wiki{{path}}?v={{p.key().id()}}">view</a></td>
+  {% if user %}
+  <td><a class="gray-link" href="/wiki/_edit{{path}}?v={{p.key().id()}}">edit</a></td>
+  {% endif %}
+</tr>
+{% endfor %}
+</table>
+{% endblock %}
+

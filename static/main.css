@@ -1,8 +1,33 @@
+html {
+    height: 100%;
+}
+
 body {
+    position: relative;
+    height: 100%;
+
     font-family: sans-serif;
     width: 800px;
+
     margin: 0 auto;
     padding: 10px;
+}
+
+.header {
+    height: 30px;
+    line-height: 30px;
+
+    margin-bottom: 10px;
+}
+
+.controls {
+    float: right;
+    font-size: 13px;
+    color: gray;
+}
+
+.controls + .controls {
+    margin-right: 20px;
 }
 
 .login-area {
@@ -13,12 +38,16 @@ body {
     right: 10px;
 }
 
-.login-link {
+.clear {
+    
+}
+
+.gray-link {
     color: gray;
     text-decoration: none;
 }
 
-.login-link:visited {
+.gray-link:visited {
     color: gray;
 }
 
@@ -98,4 +127,14 @@ input[type=submit] {
     right: 0px;
     color: gray;
     font-size: 12px;
+}
+
+.wiki-content
+{
+    width: 750px;
+}
+
+.wiki-date
+{
+    width: 250px;
 }

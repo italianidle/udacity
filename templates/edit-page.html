@@ -1,12 +1,16 @@
 {% extends "wiki-base.html" %}
     
-{% block title %}
-  EditPage
+{% block controls %}
+{% if user %}
+<a class="gray-link" href="/wiki{{path}}">view</a>
+|
+{% endif %}
+<a class="gray-link" href="/wiki/_history{{path}}">history</a>
 {% endblock %}
 
 {% block content %}
 <form method="post">
-  <textarea name="content">{{page.content}}</textarea>
+  <textarea class="wiki-content" name="content">{{page.content}}</textarea>
   <br><br>
   <input type="submit" value="Save">
 </form>

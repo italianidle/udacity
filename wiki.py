@@ -5,9 +5,19 @@ from models import User, Page
 
 class WikiPage(BaseHandler):
     def get(self, path):
-        page = Page.by_path(path)
+        v = self.request.get('v')
+        page = None
+        if v:
+            if v.isdigit():
+                page = Page.by_id(int(v), path)
+            if not page:
+                self.error(404)
+                return
+        else:
+            page = Page.by_path(path).get()
+        
         if page:
-            self.render("wiki-page.html", page = page)
+            self.render("wiki-page.html", page = page, path = path)
         else:
             self.redirect("/wiki/_edit" + path)
 
@@ -15,9 +25,19 @@ class EditPage(BaseHandler):
     def get(self, path):
         if not self.user:
             self.redirect("/wiki/login")
+
+        v = self.request.get('v')
+        page = None
+        if v:
+            if v.isdigit():
+                page = Page.by_id(int(v), path)
+            if not page:
+                self.error(404)
+                return
         else:
-            page = Page.by_path(path)
-            self.render("edit-page.html", page = page)
+            page = Page.by_path(path).get()
+
+        self.render("edit-page.html", page = page, path = path)
 
     def post(self, path):
         if not self.user:
@@ -25,17 +45,24 @@ class EditPage(BaseHandler):
             return
 
         content = self.request.get("content")
-        
-        page = Page.by_path(path)
+        old_page = Page.by_path(path).get()
 
-        if page:
-            page.content = content
-        else:
-            page = Page.new(path, content)
-
-        page.put()
+        if not (old_page or content):
+            return
+        elif not old_page or old_page.content != content:
+            page = Page(parent = Page.parent_key(path), content = content)
+            page.put()
 
         self.redirect("/wiki" + path)
+
+class HistoryPage(BaseHandler):
+    def get(self, path):
+        pages = Page.by_path(path)
+        
+        if pages:
+            self.render("history-page.html", pages = pages, path = path)
+        else:
+            self.redirect("/wiki/_edit" + path)
 
 class Register(Signup):
     def done(self):
@@ -82,6 +109,7 @@ PAGE_RE = r'(/(?:[a-zA-Z0-9_-]+/?)*)'
 app = webapp2.WSGIApplication([('/wiki/signup', Register),
                                ('/wiki/login', Login),
                                ('/wiki/logout', Logout),
+                               ('/wiki/_history' + PAGE_RE, HistoryPage),
                                ('/wiki/_edit' + PAGE_RE, EditPage),
                                ('/wiki' + PAGE_RE, WikiPage)
                                ], debug = True)

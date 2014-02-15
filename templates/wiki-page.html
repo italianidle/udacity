@@ -1,7 +1,11 @@
 {% extends "wiki-base.html" %}
     
-{% block title %}
-  Wiki - {{ page.name }}
+{% block controls %}
+{% if user %}
+<a class="gray-link" href="/wiki/_edit{{path}}">edit</a>
+|
+{% endif %}
+<a class="gray-link" href="/wiki/_history{{path}}">history</a>
 {% endblock %}
 
 {% block content %}
